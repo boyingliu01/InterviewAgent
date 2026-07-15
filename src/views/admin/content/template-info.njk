@@ -43,7 +43,6 @@
         hx-delete="/admin/api/templates/{{ template.id }}"
         hx-target="#main-content"
         hx-swap="innerHTML"
-        hx-headers='{"X-Admin-Key": "{{ adminApiKey | default('') }}"}'
         hx-confirm="确认删除模板「{{ template.name }}」？关联的计划和访谈将一并删除。"
         class="inline-flex items-center px-2.5 py-1 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100"
       >

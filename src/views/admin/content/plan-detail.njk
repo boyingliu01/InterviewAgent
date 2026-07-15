@@ -8,10 +8,9 @@
   deleteConfirmText: '',
   executeDelete(planId) {
     this.deleteStep = 3;
-    const adminKey = document.getElementById('admin-api-key')?.dataset.key || '';
     fetch('/admin/api/plans/' + planId + '?force=true', {
       method: 'DELETE',
-      headers: { 'X-Admin-Key': adminKey, 'HX-Request': 'true' },
+      headers: { 'HX-Request': 'true' },
     })
     .then(r => {
       if (!r.ok) {
@@ -30,7 +29,6 @@
     });
   }
 }" class="max-w-4xl mx-auto p-6">
-<span id="admin-api-key" data-key="{{ adminApiKey | default('') }}" class="hidden"></span>
   <div class="flex items-center justify-between mb-4">
     <div class="flex border-b border-gray-200">
       <button @click="activeTab='basic'" :class="activeTab==='basic' ? 'text-indigo-600 border-b-2 border-indigo-500 font-medium' : 'text-gray-500'" class="px-4 py-2 text-sm">基本信息</button>
@@ -55,7 +53,6 @@
         hx-post="/api/plans/{{ plan.id }}/send"
         hx-target="#main-content"
         hx-swap="innerHTML"
-        hx-headers='{"X-Admin-Key": "{{ adminApiKey | default('') }}"}'
         hx-confirm="确认发送访谈邀约？将向 {{ totalInterviews or 0 }} 位受访者发送钉钉消息。"
         class="inline-flex items-center px-2.5 py-1 text-xs font-medium text-emerald-600 bg-emerald-50 rounded-md hover:bg-emerald-100"
       >
@@ -215,7 +212,6 @@
         hx-post="/api/plans/{{ plan.id }}/send"
         hx-target="#main-content"
         hx-swap="innerHTML"
-        hx-headers='{"X-Admin-Key": "{{ adminApiKey | default('') }}"}'
         hx-confirm="确认向所有未发送成员发送访谈邀约？"
         class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700"
       >批量发送邀约</button>
@@ -229,7 +225,6 @@
         hx-post="/api/plans/{{ plan.id }}/remind"
         hx-swap="none"
         hx-confirm="确认向所有未完成成员发送提醒？"
-        hx-headers='{"Content-Type": "application/json", "X-Admin-Key": "{{ adminApiKey | default('') }}"}'
         hx-vals='{}'
         hx-on::after-request="if(event.detail.successful){htmx.ajax('GET','/admin/content/plans/{{ plan.id }}','#main-content')}"
         class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-amber-600 rounded-md hover:bg-amber-700"
@@ -267,10 +262,8 @@
                     importConfirmed = false;
                     const formData = new FormData();
                     formData.append('file', importFile);
-                    const adminKey = document.getElementById('admin-api-key')?.dataset.key || '';
                     fetch('/api/plans/{{ plan.id }}/import-preview', {
                       method: 'POST',
-                      headers: { 'X-Admin-Key': adminKey },
                       body: formData,
                     })
                     .then(r => {
@@ -341,11 +334,10 @@
                   @click="
                     importConfirmed = true;
                     importStatus = '正在导入...';
-                    const adminKey = document.getElementById('admin-api-key')?.dataset.key || '';
                     const rows = importResults.results.filter(r => r.status === 'ok');
                     fetch('/api/plans/{{ plan.id }}/import-commit', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
+                      headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ rows }),
                     })
                     .then(r => {
@@ -412,7 +404,6 @@
           var xhr = new XMLHttpRequest();
           xhr.open('POST', '/api/plans/{{ plan.id }}/members', false);
           xhr.setRequestHeader('Content-Type', 'application/json');
-          xhr.setRequestHeader('X-Admin-Key', '{{ adminApiKey | default('') }}');
           xhr.send(JSON.stringify(payload));
           if (xhr.status >= 200 && xhr.status < 300) {
             htmx.ajax('GET', '/admin/content/plans/{{ plan.id }}', '#main-content');
@@ -466,7 +457,6 @@
               hx-post="/api/plans/{{ plan.id }}/interviews/{{ interview.id }}/send"
               hx-target="#main-content"
               hx-swap="innerHTML"
-              hx-headers='{"X-Admin-Key": "{{ adminApiKey | default('') }}"}'
               hx-confirm="确认向 {{ interview.userId }} 发送访谈邀约？"
               class="text-xs text-indigo-600 hover:underline"
             >发送</button>
@@ -474,14 +464,14 @@
             {% if interview.status != 'COMPLETED' and interview.status != 'CANCELLED' and (interview.sendStatus == 'SENT' or interview.sendStatus == 'DELIVERED') %}
             <button
               type="button"
-              onclick="htmx.ajax('POST', '/api/plans/{{ plan.id }}/remind', { swap: 'none', values: { interviewId: '{{ interview.id }}' }, headers: { 'X-Admin-Key': '{{ adminApiKey | default('') }}' } }).then(function(xhr){ if(xhr.xhr && xhr.xhr.status>=200 && xhr.xhr.status<300){ htmx.ajax('GET','/admin/content/plans/{{ plan.id }}','#main-content'); } else { alert('提醒发送失败'); } })"
+              onclick="htmx.ajax('POST', '/api/plans/{{ plan.id }}/remind', { swap: 'none', values: { interviewId: '{{ interview.id }}' } }).then(function(xhr){ if(xhr.xhr && xhr.xhr.status>=200 && xhr.xhr.status<300){ htmx.ajax('GET','/admin/content/plans/{{ plan.id }}','#main-content'); } else { alert('提醒发送失败'); } })"
               class="text-xs text-amber-600 hover:underline"
             >提醒</button>
             {% endif %}
             {% if interview.status != 'COMPLETED' %}
             <button
               type="button"
-              onclick="if(confirm('确认删除成员 {{ interview.userId }}？')){ htmx.ajax('DELETE', '/api/plans/{{ plan.id }}/members/{{ interview.id }}', { swap: 'none', headers: { 'X-Admin-Key': '{{ adminApiKey | default('') }}' } }).then(function(xhr){ if(xhr.xhr && xhr.xhr.status>=200 && xhr.xhr.status<300){ htmx.ajax('GET','/admin/content/plans/{{ plan.id }}','#main-content'); } else { alert('删除失败'); } }) }"
+              onclick="if(confirm('确认删除成员 {{ interview.userId }}？')){ htmx.ajax('DELETE', '/api/plans/{{ plan.id }}/members/{{ interview.id }}', { swap: 'none' }).then(function(xhr){ if(xhr.xhr && xhr.xhr.status>=200 && xhr.xhr.status<300){ htmx.ajax('GET','/admin/content/plans/{{ plan.id }}','#main-content'); } else { alert('删除失败'); } }) }"
               class="text-xs text-red-600 hover:underline"
             >删除</button>
             {% endif %}

@@ -206,7 +206,7 @@ function reanalyzeInterview(interviewId) {
 
   fetch('/admin/api/reports/' + interviewId + '/reanalyze', {
     method: 'POST',
-    headers: { 'X-Admin-Key': '{{ adminApiKey | default("") }}' },
+    headers: {},
     signal: controller.signal
   }).then(function(res) {
     clearTimeout(timeoutId);
