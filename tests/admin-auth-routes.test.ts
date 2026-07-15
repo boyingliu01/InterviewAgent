@@ -125,4 +125,40 @@ describe('adminAuthRoutes', () => {
     expect(response.statusCode).toBe(302);
     expect(response.headers['location']).toBe('/admin/login');
   });
+
+  it('should redirect to /admin if already logged in on GET /admin/login', async () => {
+    const loginResponse = await app.inject({
+      method: 'POST',
+      url: '/admin/login',
+      payload: {
+        username: testUsername,
+        password: 'testpassword123',
+      },
+    });
+    const cookies = loginResponse.headers['set-cookie'];
+    const cookieHeader = Array.isArray(cookies) ? cookies.join('; ') : ((cookies as string) ?? '');
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/admin/login',
+      headers: cookieHeader ? { cookie: cookieHeader } : {},
+    });
+
+    expect(response.statusCode).toBe(302);
+    expect(response.headers['location']).toBe('/admin');
+  });
+
+  it('should reject login with invalid request body', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/admin/login',
+      payload: {
+        username: '',
+        password: '',
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toContain('无效的请求格式');
+  });
 });
