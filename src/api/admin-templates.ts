@@ -164,8 +164,6 @@ function buildQuestionMapFromTemplate(
   }
 }
 
-const getAdminApiKey = () => process.env['ADMIN_API_KEY'] || '';
-
 export async function adminTemplatesRoutes(
   fastify: FastifyInstance,
   opts: AdminTemplatesRoutesOptions
@@ -202,7 +200,6 @@ export async function adminTemplatesRoutes(
           interviewPlans: undefined,
         }));
         return reply.view('layouts/admin-tree.njk', {
-          adminApiKey: getAdminApiKey(),
           templates: templatesWithPlans,
         });
       } catch (e) {
@@ -221,7 +218,6 @@ export async function adminTemplatesRoutes(
       try {
         const plans = await analyticsService.getDashboardPlanProgress();
         return reply.view('admin/content/dashboard.njk', {
-          adminApiKey: getAdminApiKey(),
           plans,
         });
       } catch (e) {
@@ -236,9 +232,7 @@ export async function adminTemplatesRoutes(
     '/admin/content/templates/new',
     { preHandler: adminAuth },
     async (_request: FastifyRequest, reply: FastifyReply) => {
-      return reply.view('admin/content/template-new.njk', {
-        adminApiKey: getAdminApiKey(),
-      });
+      return reply.view('admin/content/template-new.njk', {});
     }
   );
 
@@ -247,9 +241,7 @@ export async function adminTemplatesRoutes(
     '/admin/content/templates/import',
     { preHandler: adminAuth },
     async (_request: FastifyRequest, reply: FastifyReply) => {
-      return reply.view('admin/content/template-import.njk', {
-        adminApiKey: getAdminApiKey(),
-      });
+      return reply.view('admin/content/template-import.njk', {});
     }
   );
 
@@ -326,7 +318,6 @@ export async function adminTemplatesRoutes(
       const { templateId } = (request.query as Record<string, string | undefined>) || {};
       const templates = await templateRepo.findAllForSelect();
       return reply.view('admin/content/plan-form.njk', {
-        adminApiKey: getAdminApiKey(),
         templates,
         selectedTemplateId: templateId || null,
       });
@@ -343,7 +334,6 @@ export async function adminTemplatesRoutes(
       if (!plan) return reply.status(404).type('text/html').send('计划不存在');
       const templates = await templateRepo.findAllForSelect();
       return reply.view('admin/content/plan-form.njk', {
-        adminApiKey: getAdminApiKey(),
         templates,
         plan,
         selectedTemplateId: plan.templateId,
@@ -373,7 +363,6 @@ export async function adminTemplatesRoutes(
         _interviewCount: template._count.interviews,
       };
       return reply.view('admin/content/template-info.njk', {
-        adminApiKey: getAdminApiKey(),
         template: tpl,
         questions,
         invitationPrompt: parsedContent['invitationPrompt'] as string | undefined,
@@ -400,7 +389,6 @@ export async function adminTemplatesRoutes(
       }
       const inviteeMap = buildInviteeNameMap(plan.inviteeData);
       return reply.view('admin/content/plan-detail.njk', {
-        adminApiKey: getAdminApiKey(),
         plan,
         template: plan.template,
         interviews: plan.interviews,
@@ -425,7 +413,6 @@ export async function adminTemplatesRoutes(
       if (!plan) return reply.status(404).type('text/html').send('计划不存在');
       const completed = interviews.filter((i) => i.status === 'COMPLETED');
       return reply.view('admin/content/plan-detail.njk', {
-        adminApiKey: getAdminApiKey(),
         plan: { ...plan, sentCount: 0 },
         template: plan.template,
         interviews,
@@ -477,7 +464,6 @@ export async function adminTemplatesRoutes(
       }
 
       return reply.view('admin/content/report-detail.njk', {
-        adminApiKey: getAdminApiKey(),
         interview,
         report,
         inviteeInfo,
@@ -679,7 +665,6 @@ export async function adminTemplatesRoutes(
         }
         const questions = (parsedContent['questions'] as string[]) || [];
         return reply.view('admin/content/template-edit.njk', {
-          adminApiKey: getAdminApiKey(),
           isEdit: true,
           template: { ...template, ...parsedContent },
           existingQuestions: questions.map((q, i) => ({ text: q, order: i, uid: `uid_${i}` })),
@@ -987,7 +972,6 @@ export async function adminTemplatesRoutes(
             interviewPlanService.findAllForSelect(),
           ]);
         return reply.view('analytics/index.njk', {
-          adminApiKey: getAdminApiKey(),
           kpis,
           statusDistribution,
           planCompletionRates,
@@ -1034,7 +1018,6 @@ export async function adminTemplatesRoutes(
       try {
         const reports = await analysisService.findRecentReports(100);
         return reply.view('reports/index.njk', {
-          adminApiKey: getAdminApiKey(),
           reports: reports.map((r) => ({
             interviewId: r.interviewId,
             userId: r.interview?.userId ?? '-',
@@ -1085,7 +1068,6 @@ export async function adminTemplatesRoutes(
         }
 
         return reply.view('reports/detail.njk', {
-          adminApiKey: getAdminApiKey(),
           interview: { ...interviewData, createdAtFormatted: fmtDate(interviewData.createdAt) },
           inviteeInfo,
           report: report
