@@ -22,7 +22,7 @@ export async function adminAuth(request: FastifyRequest, reply: FastifyReply): P
 
   if (request.session) {
     const session = request.session.get('admin') as AdminSession | undefined;
-    const maxAge = Number(process.env['SESSION_MAX_AGE'] || 28800);
+    const maxAge = Number(process.env['SESSION_MAX_AGE']) || 28800;
 
     if (validateSession(session, maxAge)) {
       request.user = {

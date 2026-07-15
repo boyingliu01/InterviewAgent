@@ -51,6 +51,11 @@ describe('adminAuth middleware', () => {
 
     expect(reply.code).not.toHaveBeenCalled();
     expect(reply.send).not.toHaveBeenCalled();
+    expect((request as FastifyRequest).user).toBeDefined();
+    expect((request as FastifyRequest).user).toEqual({
+      userId: 'admin',
+      role: 'admin',
+    });
   });
 
   it('should allow access with valid API key', async () => {
@@ -62,6 +67,11 @@ describe('adminAuth middleware', () => {
 
     expect(reply.code).not.toHaveBeenCalled();
     expect(reply.send).not.toHaveBeenCalled();
+    expect((request as FastifyRequest).user).toBeDefined();
+    expect((request as FastifyRequest).user).toEqual({
+      userId: 'admin',
+      role: 'admin',
+    });
   });
 
   it('should reject request with invalid session and no API key', async () => {
@@ -102,6 +112,39 @@ describe('adminAuth middleware', () => {
 
     expect(reply.code).not.toHaveBeenCalled();
     expect(reply.send).not.toHaveBeenCalled();
+  });
+
+  it('should return 500 when ADMIN_API_KEY is not configured', async () => {
+    const request = createMockRequest(null, { 'x-admin-key': 'test-api-key' });
+    const reply = createMockReply();
+    delete process.env['ADMIN_API_KEY'];
+
+    await adminAuth(request as FastifyRequest, reply as FastifyReply);
+
+    expect(reply.code).toHaveBeenCalledWith(500);
+    expect(reply.send).toHaveBeenCalledWith(expect.stringContaining('ADMIN_API_KEY'));
+  });
+
+  it('should use API key when session is expired', async () => {
+    const session = {
+      userId: 'admin',
+      role: 'admin' as const,
+      loginTime: Date.now() - 999999999,
+      lastActivity: Date.now(),
+    };
+    const request = createMockRequest(session, { 'x-admin-key': 'test-api-key' });
+    const reply = createMockReply();
+    process.env['ADMIN_API_KEY'] = 'test-api-key';
+
+    await adminAuth(request as FastifyRequest, reply as FastifyReply);
+
+    expect(reply.code).not.toHaveBeenCalled();
+    expect(reply.send).not.toHaveBeenCalled();
+    expect((request as FastifyRequest).user).toBeDefined();
+    expect((request as FastifyRequest).user).toEqual({
+      userId: 'admin',
+      role: 'admin',
+    });
   });
 
   it('should allow GET requests without authentication', async () => {
