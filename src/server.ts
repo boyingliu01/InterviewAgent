@@ -1,9 +1,11 @@
 import { dirname, normalize, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import cors from '@fastify/cors';
+import csrfProtection from '@fastify/csrf-protection';
 import fastifyFormbody from '@fastify/formbody';
 import fastifyMultipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
+import secureSession from '@fastify/secure-session';
 import fastifyStatic from '@fastify/static';
 import fastifyView from '@fastify/view';
 import { PrismaClient } from '@prisma/client';
@@ -25,6 +27,7 @@ import { DingTalkStreamClient } from './integrations/dingtalk/stream-client.js';
 import { tokenManager } from './integrations/dingtalk/token-manager.js';
 import { InterviewRepository } from './repositories/interview.repository.js';
 import { TemplateRepository } from './repositories/template.repository.js';
+import { adminAuthRoutes } from './routes/admin-auth.js';
 import { AnalysisService } from './services/analysis.service.js';
 import { AnalyticsService } from './services/analytics.service.js';
 import { AuditCleanupService } from './services/audit-cleanup.service.js';
@@ -159,6 +162,34 @@ export async function buildApp() {
   const exportService = new ExportService(prisma);
 
   await securityMiddleware(fastify, prisma);
+
+  const sessionSecret = process.env['SESSION_SECRET'];
+  if (!sessionSecret || sessionSecret.length < 32) {
+    throw new Error('SESSION_SECRET must be at least 32 characters');
+  }
+
+  await fastify.register(secureSession, {
+    secret: sessionSecret,
+    salt: process.env['SESSION_SALT'] || 'dialog-survey-salt-16ch',
+    cookie: {
+      path: '/',
+      httpOnly: true,
+      secure: NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: Number(process.env['SESSION_MAX_AGE']) || 28800,
+    },
+  });
+
+  await fastify.register(csrfProtection, {
+    cookieOpts: {
+      path: '/',
+      httpOnly: false,
+      secure: NODE_ENV === 'production',
+      sameSite: 'strict',
+    },
+  });
+
+  await fastify.register(adminAuthRoutes);
 
   // Rate limiting — skip in test environment since fastify.inject() bypasses the hook
   if (NODE_ENV !== 'test') {
