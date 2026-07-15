@@ -148,6 +148,68 @@ Key environment variables (see `.env.example` for the full list):
 
 ---
 
+### Admin Authentication
+
+The admin UI requires authentication. Configure the following environment variables:
+
+```bash
+# Admin credentials
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD_HASH=$2a$12$...  # Generate with bcrypt
+
+# Session configuration
+SESSION_SECRET=<32-char-random-string>
+SESSION_SALT=<16-char-random-string>
+SESSION_MAX_AGE=28800  # 8 hours in seconds
+```
+
+#### Generate Password Hash
+
+```bash
+node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('your-password', 12).then(console.log)"
+```
+
+Copy the output hash and set it as `ADMIN_PASSWORD_HASH`.
+
+#### Generate Session Secret and Salt
+
+```bash
+# Generate SESSION_SECRET (32 bytes)
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# Generate SESSION_SALT (16 bytes)
+node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
+```
+
+#### Access the Admin UI
+
+1. Navigate to `http://localhost:3001/admin`
+2. Enter your username and password
+3. You will be redirected to the admin dashboard
+
+#### Session Management
+
+- Sessions expire after 8 hours of inactivity (configurable via `SESSION_MAX_AGE`)
+- Session data is stored in encrypted cookies (no server-side storage)
+- To logout, navigate to `/admin/logout` or clear your browser cookies
+
+#### API Key Backward Compatibility
+
+API access via `X-Admin-Key` header is still supported for backward compatibility with existing scripts and integrations:
+
+```bash
+curl -H "X-Admin-Key: your-api-key" http://localhost:3001/admin
+```
+
+#### Security Features
+
+- **CSRF Protection**: All form submissions include CSRF tokens automatically
+- **Session Timeout**: Inactive sessions expire after 8 hours
+- **Encrypted Cookies**: Session data is encrypted and signed
+- **Password Hashing**: Passwords are hashed using bcrypt (cost factor 12)
+
+---
+
 ### Production Deployment
 
 **Linux / macOS** (PM2):
