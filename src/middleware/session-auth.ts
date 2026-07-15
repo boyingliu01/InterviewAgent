@@ -3,6 +3,7 @@ import type { FastifyRequest } from 'fastify/types/request.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type {} from '@fastify/secure-session';
+import { DEFAULT_SESSION_MAX_AGE } from '../config/constants.js';
 
 export interface AdminSession {
   userId: string;
@@ -33,7 +34,7 @@ export function validateSession(
 
 export async function sessionAuth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
   const session = request.session.get('admin') as AdminSession | undefined;
-  const maxAge = Number(process.env['SESSION_MAX_AGE']) || 28800;
+  const maxAge = Number(process.env['SESSION_MAX_AGE']) || DEFAULT_SESSION_MAX_AGE;
 
   if (!validateSession(session, maxAge)) {
     // Session invalid or expired

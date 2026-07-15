@@ -1,7 +1,9 @@
 import type {} from '@fastify/secure-session';
 import type { FastifyReply } from 'fastify';
 import type { FastifyRequest } from 'fastify/types/request.js';
-import { type AdminSession, validateSession } from './session-auth.js';
+import { DEFAULT_SESSION_MAX_AGE } from '../config/constants.js';
+import type { AdminSession } from './session-auth.js';
+import { validateSession } from './session-auth.js';
 
 const UNPROTECTED_METHODS = new Set<string>(['GET', 'HEAD', 'OPTIONS']);
 
@@ -22,7 +24,7 @@ export async function adminAuth(request: FastifyRequest, reply: FastifyReply): P
 
   if (request.session) {
     const session = request.session.get('admin') as AdminSession | undefined;
-    const maxAge = Number(process.env['SESSION_MAX_AGE']) || 28800;
+    const maxAge = Number(process.env['SESSION_MAX_AGE']) || DEFAULT_SESSION_MAX_AGE;
 
     if (validateSession(session, maxAge)) {
       request.user = {

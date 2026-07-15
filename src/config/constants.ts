@@ -1,0 +1,1 @@
+export const DEFAULT_SESSION_MAX_AGE = 28800;

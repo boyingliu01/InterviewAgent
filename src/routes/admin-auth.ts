@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { DEFAULT_SESSION_MAX_AGE } from '../config/constants.js';
 import type { AdminSession } from '../middleware/session-auth.js';
 
 declare module '@fastify/secure-session' {
@@ -17,7 +18,7 @@ const loginSchema = z.object({
 export async function adminAuthRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get('/admin/login', async (request: FastifyRequest, reply: FastifyReply) => {
     const session = request.session.get('admin') as AdminSession | undefined;
-    const maxAge = Number(process.env['SESSION_MAX_AGE']) || 28800;
+    const maxAge = Number(process.env['SESSION_MAX_AGE']) || DEFAULT_SESSION_MAX_AGE;
 
     if (session && Date.now() - session.loginTime < maxAge * 1000) {
       return reply.redirect('/admin');

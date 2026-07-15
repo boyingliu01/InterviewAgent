@@ -22,6 +22,7 @@ import { analysisRoutes } from './api/analysis.js';
 import { healthRoutes } from './api/health.js';
 import { interviewPlanRoutes } from './api/plans.js';
 import { templateRoutes } from './api/templates.js';
+import { DEFAULT_SESSION_MAX_AGE } from './config/constants.js';
 import { DingTalkMessageSender } from './integrations/dingtalk/message-sender.js';
 import { DingTalkStreamClient } from './integrations/dingtalk/stream-client.js';
 import { tokenManager } from './integrations/dingtalk/token-manager.js';
@@ -168,15 +169,20 @@ export async function buildApp() {
     throw new Error('SESSION_SECRET must be at least 32 characters');
   }
 
+  const sessionSalt = process.env['SESSION_SALT'];
+  if (!sessionSalt) {
+    throw new Error('SESSION_SALT environment variable is required');
+  }
+
   await fastify.register(secureSession, {
     secret: sessionSecret,
-    salt: process.env['SESSION_SALT'] || 'dialog-survey-salt-16ch',
+    salt: sessionSalt,
     cookie: {
       path: '/',
       httpOnly: true,
       secure: NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: Number(process.env['SESSION_MAX_AGE']) || 28800,
+      maxAge: Number(process.env['SESSION_MAX_AGE']) || DEFAULT_SESSION_MAX_AGE,
     },
   });
 
