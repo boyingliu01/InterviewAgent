@@ -36,6 +36,8 @@ export async function sessionAuth(request: FastifyRequest, reply: FastifyReply):
   const maxAge = Number(process.env['SESSION_MAX_AGE'] || 28800);
 
   if (!validateSession(session, maxAge)) {
+    // Session invalid or expired
+    // reply.send() terminates the request; return ensures no further middleware executes
     if (session) {
       request.session.delete();
     }
