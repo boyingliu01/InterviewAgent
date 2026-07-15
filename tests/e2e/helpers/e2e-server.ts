@@ -17,6 +17,10 @@ export interface E2EServer {
  */
 export async function createE2EServer(port = 0): Promise<E2EServer> {
   process.env['NODE_ENV'] = 'test';
+  // Set dummy env vars for auth session
+  if (!process.env['SESSION_SECRET'])
+    process.env['SESSION_SECRET'] = 'e2e-session-secret-key-32chars!!';
+  if (!process.env['SESSION_SALT']) process.env['SESSION_SALT'] = 'e2e-session-salt';
   // Set dummy DingTalk env vars so DingTalkStreamClient.fromEnv() doesn't throw
   if (!process.env['DINGTALK_CLIENT_ID']) process.env['DINGTALK_CLIENT_ID'] = 'e2e-dummy-client-id';
   if (!process.env['DINGTALK_CLIENT_SECRET'])

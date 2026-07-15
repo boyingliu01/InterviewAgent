@@ -77,6 +77,8 @@ describe('buildApp', () => {
   let app: { fastify: FastifyInstance; prisma: unknown };
 
   beforeAll(async () => {
+    vi.stubEnv('SESSION_SECRET', 'a'.repeat(32));
+    vi.stubEnv('SESSION_SALT', 'b'.repeat(16));
     vi.stubEnv('DINGTALK_CLIENT_ID', 'test-client-id');
     vi.stubEnv('DINGTALK_CLIENT_SECRET', 'test-client-secret');
     const { buildApp } = await import('../src/server.js');
@@ -85,6 +87,7 @@ describe('buildApp', () => {
 
   afterAll(async () => {
     await app.fastify.close();
+    vi.unstubAllEnvs();
   });
 
   it('should create a Fastify app instance', () => {
