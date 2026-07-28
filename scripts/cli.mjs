@@ -928,6 +928,8 @@ Options:
   --dingtalk-client-id <id>       DingTalk client ID (required)
   --dingtalk-client-secret <sec>  DingTalk client secret (required)
   --dingtalk-agent-id <id>        DingTalk agent ID (required)
+  --skip-port-check               Skip port availability check
+  --help                          Show this help message
 
 If any required option is missing, the installer falls back to interactive mode.
 

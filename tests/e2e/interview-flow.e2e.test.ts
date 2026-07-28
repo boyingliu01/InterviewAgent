@@ -156,9 +156,9 @@ describe('Interview Flow (E2E)', () => {
           if (interview) break;
         }
       }
-      expect(interview).toBeDefined();
-      const interviewId = interview?.id;
-      expect(interviewId).toBeDefined();
+      expect(interview).not.toBeNull();
+      const interviewId = interview?.id ?? '';
+      expect(interviewId, 'Expected interview to have an id').not.toBe('');
       if (interviewId) {
         cleanupIds.interviews = [...(cleanupIds.interviews || []), interviewId];
       }
