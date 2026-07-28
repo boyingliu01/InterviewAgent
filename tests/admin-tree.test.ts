@@ -10,6 +10,8 @@ describe('Admin Tree Routes', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
+    vi.stubEnv('SESSION_SECRET', 'a'.repeat(32));
+    vi.stubEnv('SESSION_SALT', 'b'.repeat(16));
     vi.stubEnv('ADMIN_API_KEY', ADMIN_KEY);
     vi.stubEnv('DINGTALK_CLIENT_ID', 'test-client-id');
     vi.stubEnv('DINGTALK_CLIENT_SECRET', 'test-client-secret');

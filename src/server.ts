@@ -1,9 +1,11 @@
-import { dirname, normalize, resolve } from 'node:path';
+import { dirname, normalize } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import cors from '@fastify/cors';
+import csrfProtection from '@fastify/csrf-protection';
 import fastifyFormbody from '@fastify/formbody';
 import fastifyMultipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
+import secureSession from '@fastify/secure-session';
 import fastifyStatic from '@fastify/static';
 import fastifyView from '@fastify/view';
 import { PrismaClient } from '@prisma/client';
@@ -20,11 +22,13 @@ import { analysisRoutes } from './api/analysis.js';
 import { healthRoutes } from './api/health.js';
 import { interviewPlanRoutes } from './api/plans.js';
 import { templateRoutes } from './api/templates.js';
+import { DEFAULT_SESSION_MAX_AGE } from './config/constants.js';
 import { DingTalkMessageSender } from './integrations/dingtalk/message-sender.js';
 import { DingTalkStreamClient } from './integrations/dingtalk/stream-client.js';
 import { tokenManager } from './integrations/dingtalk/token-manager.js';
 import { InterviewRepository } from './repositories/interview.repository.js';
 import { TemplateRepository } from './repositories/template.repository.js';
+import { adminAuthRoutes } from './routes/admin-auth.js';
 import { AnalysisService } from './services/analysis.service.js';
 import { AnalyticsService } from './services/analytics.service.js';
 import { AuditCleanupService } from './services/audit-cleanup.service.js';
@@ -33,6 +37,7 @@ import { InterviewPlanService } from './services/interview-plan.service.js';
 import { type StreamMessage, processStreamMessage } from './services/stream-message.service.js';
 import { error, info, warn } from './utils/logger.js';
 import { renderMarkdown } from './utils/markdown.js';
+import { resolveAssetRoots } from './utils/path-resolver.js';
 import { createVerifyApiKey, securityMiddleware } from './utils/security.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -96,8 +101,10 @@ export async function buildApp() {
     }
   );
 
+  const { viewsDir, staticRoot } = resolveAssetRoots(__dirname);
+
   await fastify.register(fastifyStatic, {
-    root: resolve(__dirname, '../public'),
+    root: staticRoot,
     prefix: '/',
   });
 
@@ -110,8 +117,6 @@ export async function buildApp() {
   await fastify.register(fastifyMultipart, {
     limits: { fileSize: 1 * 1024 * 1024, parts: 1 },
   });
-
-  const viewsDir = resolve(__dirname, '..', 'src', 'views');
 
   const customNunjucks = {
     ...nunjucks,
@@ -159,6 +164,39 @@ export async function buildApp() {
   const exportService = new ExportService(prisma);
 
   await securityMiddleware(fastify, prisma);
+
+  const sessionSecret = process.env['SESSION_SECRET'];
+  if (!sessionSecret || sessionSecret.length < 32) {
+    throw new Error('SESSION_SECRET must be at least 32 characters');
+  }
+
+  const sessionSalt = process.env['SESSION_SALT'];
+  if (!sessionSalt) {
+    throw new Error('SESSION_SALT environment variable is required');
+  }
+
+  await fastify.register(secureSession, {
+    secret: sessionSecret,
+    salt: sessionSalt,
+    cookie: {
+      path: '/',
+      httpOnly: true,
+      secure: NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: Number(process.env['SESSION_MAX_AGE']) || DEFAULT_SESSION_MAX_AGE,
+    },
+  });
+
+  await fastify.register(csrfProtection, {
+    cookieOpts: {
+      path: '/',
+      httpOnly: false,
+      secure: NODE_ENV === 'production',
+      sameSite: 'strict',
+    },
+  });
+
+  await fastify.register(adminAuthRoutes);
 
   // Rate limiting — skip in test environment since fastify.inject() bypasses the hook
   if (NODE_ENV !== 'test') {

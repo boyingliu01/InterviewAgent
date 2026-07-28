@@ -301,7 +301,7 @@ export function checkPort() {
  * @param {string} databaseUrl
  * @returns {Promise<{ ok: boolean, messages: string[] }>}
  */
-export async function checkPrerequisites(databaseUrl) {
+export async function checkPrerequisites(databaseUrl, options = {}) {
   const messages = [];
   let allOk = true;
 
@@ -313,11 +313,36 @@ export async function checkPrerequisites(databaseUrl) {
   messages.push(pgCheck.message);
   if (!pgCheck.ok) allOk = false;
 
-  const portCheck = await checkPort();
-  messages.push(portCheck.message);
-  if (!portCheck.ok) allOk = false;
+  if (!options.skipPortCheck) {
+    const portCheck = await checkPort();
+    messages.push(portCheck.message);
+    if (!portCheck.ok) allOk = false;
+  }
 
   return { ok: allOk, messages };
+}
+
+/**
+ * Verify installation integrity by checking required files exist.
+ * @param {string} installDir
+ * @returns {{ ok: boolean, missing: string[] }}
+ */
+export function verifyInstallation(installDir) {
+  const requiredFiles = [
+    'ecosystem.config.cjs',
+    'dist/src/server.js',
+    '.env',
+    'node_modules',
+  ];
+
+  const missing = [];
+  for (const file of requiredFiles) {
+    if (!existsSync(join(installDir, file))) {
+      missing.push(file);
+    }
+  }
+
+  return { ok: missing.length === 0, missing };
 }
 
 // ─── PM2 Helpers ─────────────────────────────────────────────────────────────
@@ -524,8 +549,31 @@ export async function installCommand(flags) {
     printInstallHelp();
     return;
   } else {
-    log(`Non-interactive flags detected but missing: ${flagValidation.missing.join(', ')}`);
-    log('Falling back to interactive mode...\n');
+    // Detect if any non-interactive flags were provided
+    const PROVIDED_FLAGS = [
+      'db-url', 'llm-api-key', 'llm-base-url', 'llm-model',
+      'dingtalk-client-id', 'dingtalk-client-secret', 'dingtalk-agent-id',
+    ];
+    const anyFlagProvided = PROVIDED_FLAGS.some((f) => flags[f] !== undefined);
+
+    if (anyFlagProvided) {
+      logError(
+        `Non-interactive install requires all flags. Missing: ${flagValidation.missing.join(', ')}`
+      );
+      log('Usage: npx dialog-survey install \\');
+      log('  --db-url "postgresql://..." \\');
+      log('  --dingtalk-client-id "xxx" \\');
+      log('  --dingtalk-client-secret "xxx" \\');
+      log('  --dingtalk-agent-id "xxx"');
+      log('  [--llm-api-key "xxx"]');
+      log('  [--llm-base-url "http://localhost:11434/v1"]');
+      log('  [--llm-model "qwen2.5"]');
+      log('  [--skip-port-check]');
+      process.exitCode = 1;
+      return;
+    }
+
+    log('No flags provided. Starting interactive mode...\n');
     config = await collectConfigInteractive();
     const interactiveValidation = validateConfig(config);
     if (!interactiveValidation.valid) {
@@ -537,7 +585,9 @@ export async function installCommand(flags) {
 
   // Step 2: Check prerequisites
   log('Checking prerequisites...');
-  const prereqs = await checkPrerequisites(config.DATABASE_URL);
+  const prereqs = await checkPrerequisites(config.DATABASE_URL, {
+    skipPortCheck: flags['skip-port-check'] === 'true',
+  });
   for (const msg of prereqs.messages) {
     log(`  ${msg}`);
   }
@@ -707,6 +757,14 @@ export async function startCommand() {
 
   if (!existsSync(join(INSTALL_DIR, 'ecosystem.config.cjs'))) {
     logError(`No installation found at ${INSTALL_DIR}. Run 'npx dialog-survey install' first.`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const verification = verifyInstallation(INSTALL_DIR);
+  if (!verification.ok) {
+    logError(`Installation is incomplete. Missing: ${verification.missing.join(', ')}`);
+    logError("Run 'npx dialog-survey install' to repair the installation.");
     process.exitCode = 1;
     return;
   }

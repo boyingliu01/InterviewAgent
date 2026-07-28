@@ -31,7 +31,7 @@
     }
   </script>
 </head>
-<body class="bg-gray-50 h-screen flex flex-col overflow-hidden" hx-headers='{"X-Admin-Key": "{{ adminApiKey | default('') }}"}'>
+<body class="bg-gray-50 h-screen flex flex-col overflow-hidden">
   <!-- Top bar -->
   <header class="bg-white border-b border-gray-200 flex-shrink-0 h-11 flex items-center px-4 gap-3">
     <span class="text-sm font-semibold text-gray-800">访谈管理后台</span>
@@ -69,10 +69,13 @@
     </main>
   </div>
 
-  <!-- Global HTMX: inject X-Admin-Key into ALL requests -->
+  <!-- Global HTMX: inject CSRF token into ALL requests -->
   <script>
   document.body.addEventListener('htmx:configRequest', function(evt) {
-    evt.detail.headers['X-Admin-Key'] = '{{ adminApiKey | default('') }}';
+    var csrfToken = document.cookie.match(/csrf-token=([^;]+)/)?.[1];
+    if (csrfToken) {
+      evt.detail.headers['x-csrf-token'] = csrfToken;
+    }
   });
 
   // Show/hide loading indicator for HTMX content loads
@@ -111,6 +114,10 @@
 
   // Scroll to error on form validation failure
   document.body.addEventListener('htmx:responseError', function(evt) {
+    if (evt.detail.xhr.status === 401) {
+      window.location.href = '/admin/login';
+      return;
+    }
     var errorEl = document.querySelector('#form-result .text-red-600, #plan-form-result .text-red-600');
     if (errorEl) {
       errorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
