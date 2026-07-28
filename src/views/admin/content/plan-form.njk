@@ -37,6 +37,7 @@
         }
       } else if (resp && resp.id) {
         htmx.ajax('GET', '/admin/content/plans/' + resp.id, {target: '#main-content', swap: 'innerHTML'});
+        htmx.ajax('GET', '/admin', {target: '#tree-panel', swap: 'innerHTML'});
       }
       {% endif %}
     }"

@@ -1,3 +1,6 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   checkNodeVersion,
@@ -14,6 +17,7 @@ import {
   startViaNode,
   stopDirectService,
   validateConfig,
+  verifyInstallation,
   // @ts-expect-error - cli.mjs has no type declarations
 } from '../scripts/cli.mjs';
 
@@ -25,6 +29,7 @@ describe('CLI', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.restoreAllMocks();
+    process.exitCode = undefined;
   });
 
   describe('parseArgs', () => {
@@ -455,6 +460,71 @@ describe('CLI', () => {
       const output = writeSpy.mock.calls.map((c) => c[0]).join('');
       expect(output).toContain('uninstaller');
       writeSpy.mockRestore();
+    });
+  });
+
+  describe('verifyInstallation (#158)', () => {
+    let tmpDir: string;
+
+    beforeEach(() => {
+      tmpDir = mkdtempSync(join(tmpdir(), 'dialog-survey-test-'));
+    });
+
+    afterEach(() => {
+      if (tmpDir) rmSync(tmpDir, { recursive: true, force: true });
+    });
+
+    it('should return ok=true when all required files exist', () => {
+      mkdirSync(join(tmpDir, 'dist', 'src'), { recursive: true });
+      mkdirSync(join(tmpDir, 'node_modules'), { recursive: true });
+      writeFileSync(join(tmpDir, 'ecosystem.config.cjs'), 'module.exports = {};');
+      writeFileSync(join(tmpDir, 'dist', 'src', 'server.js'), '// server.js');
+      writeFileSync(join(tmpDir, '.env'), 'DATABASE_URL=test');
+
+      const result = verifyInstallation(tmpDir);
+      expect(result.ok).toBe(true);
+      expect(result.missing).toEqual([]);
+    });
+
+    it('should return ok=false with missing files list', () => {
+      writeFileSync(join(tmpDir, 'ecosystem.config.cjs'), 'module.exports = {};');
+
+      const result = verifyInstallation(tmpDir);
+      expect(result.ok).toBe(false);
+      expect(result.missing).toContain('dist/src/server.js');
+      expect(result.missing).toContain('.env');
+      expect(result.missing).toContain('node_modules');
+    });
+
+    it('should report each missing file individually', () => {
+      mkdirSync(join(tmpDir, 'node_modules'), { recursive: true });
+      writeFileSync(join(tmpDir, '.env'), 'DATABASE_URL=test');
+
+      const result = verifyInstallation(tmpDir);
+      expect(result.ok).toBe(false);
+      expect(result.missing).toContain('ecosystem.config.cjs');
+      expect(result.missing).toContain('dist/src/server.js');
+      expect(result.missing).not.toContain('.env');
+      expect(result.missing).not.toContain('node_modules');
+    });
+
+    it('should return ok=true for a complete installation', () => {
+      mkdirSync(join(tmpDir, 'dist', 'src'), { recursive: true });
+      mkdirSync(join(tmpDir, 'node_modules'), { recursive: true });
+      writeFileSync(join(tmpDir, 'ecosystem.config.cjs'), '');
+      writeFileSync(join(tmpDir, 'dist', 'src', 'server.js'), '');
+      writeFileSync(join(tmpDir, '.env'), '');
+
+      const result = verifyInstallation(tmpDir);
+      expect(result.ok).toBe(true);
+      expect(result.missing).toHaveLength(0);
+    });
+
+    it('should be callable from startCommand context', () => {
+      expect(typeof verifyInstallation).toBe('function');
+      const result = verifyInstallation('/nonexistent/path');
+      expect(result.ok).toBe(false);
+      expect(result.missing.length).toBeGreaterThan(0);
     });
   });
 });

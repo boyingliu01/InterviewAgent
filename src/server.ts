@@ -1,4 +1,4 @@
-import { dirname, normalize, resolve } from 'node:path';
+import { dirname, normalize } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import cors from '@fastify/cors';
 import csrfProtection from '@fastify/csrf-protection';
@@ -37,6 +37,7 @@ import { InterviewPlanService } from './services/interview-plan.service.js';
 import { type StreamMessage, processStreamMessage } from './services/stream-message.service.js';
 import { error, info, warn } from './utils/logger.js';
 import { renderMarkdown } from './utils/markdown.js';
+import { resolveAssetRoots } from './utils/path-resolver.js';
 import { createVerifyApiKey, securityMiddleware } from './utils/security.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -100,8 +101,10 @@ export async function buildApp() {
     }
   );
 
+  const { viewsDir, staticRoot } = resolveAssetRoots(__dirname);
+
   await fastify.register(fastifyStatic, {
-    root: resolve(__dirname, '../public'),
+    root: staticRoot,
     prefix: '/',
   });
 
@@ -114,8 +117,6 @@ export async function buildApp() {
   await fastify.register(fastifyMultipart, {
     limits: { fileSize: 1 * 1024 * 1024, parts: 1 },
   });
-
-  const viewsDir = resolve(__dirname, '..', 'src', 'views');
 
   const customNunjucks = {
     ...nunjucks,
