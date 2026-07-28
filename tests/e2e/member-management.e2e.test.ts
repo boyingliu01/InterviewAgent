@@ -24,7 +24,7 @@ async function getCsrfToken(page: Page): Promise<string> {
 async function adminLogin(page: Page, context: BrowserContext, baseUrl: string): Promise<void> {
   await page.goto(`${baseUrl}/admin/login`, { waitUntil: 'load' });
   const csrfToken = await getCsrfToken(page);
-  const resp = await page.context().request.post(`${baseUrl}/admin/login`, {
+  const resp = await page.request.post(`${baseUrl}/admin/login`, {
     headers: {
       'content-type': 'application/x-www-form-urlencoded',
       'x-csrf-token': csrfToken,
@@ -151,10 +151,11 @@ describe('Member Management (Playwright E2E)', () => {
       await adminLogin(page, context, baseUrl);
 
       const { planId } = await createTemplateAndPlan();
+      const uniqueUser = `user_add_${Date.now()}`;
 
-      const resp = await page.context().request.post(`${baseUrl}/api/plans/${planId}/members`, {
+      const resp = await page.request.post(`${baseUrl}/api/plans/${planId}/members`, {
         headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
-        data: { userId: 'user_test1', name: 'Test User 1' },
+        data: { userId: uniqueUser, name: 'Test User 1' },
       });
 
       expect(resp.status()).toBe(200);
@@ -169,7 +170,7 @@ describe('Member Management (Playwright E2E)', () => {
         where: { planId },
       });
       expect(interviews).toHaveLength(1);
-      expect(interviews[0].userId).toBe('user_test1');
+      expect(interviews[0].userId).toBe(uniqueUser);
     });
 
     it('should add a member with phone number via API', async () => {
@@ -177,7 +178,7 @@ describe('Member Management (Playwright E2E)', () => {
 
       const { planId } = await createTemplateAndPlan();
 
-      const resp = await page.context().request.post(`${baseUrl}/api/plans/${planId}/members`, {
+      const resp = await page.request.post(`${baseUrl}/api/plans/${planId}/members`, {
         headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
         data: { phone: '13800138001', name: 'Phone User' },
       });
@@ -198,7 +199,7 @@ describe('Member Management (Playwright E2E)', () => {
 
       const { planId } = await createTemplateAndPlan();
 
-      const resp = await page.context().request.post(`${baseUrl}/api/plans/${planId}/members`, {
+      const resp = await page.request.post(`${baseUrl}/api/plans/${planId}/members`, {
         headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
         data: { name: 'No ID User' },
       });
@@ -212,9 +213,10 @@ describe('Member Management (Playwright E2E)', () => {
       await adminLogin(page, context, baseUrl);
 
       const fakeId = '00000000-0000-0000-0000-000000000000';
-      const resp = await page.context().request.post(`${baseUrl}/api/plans/${fakeId}/members`, {
+      const uniqueUser = `user_nonexist_${Date.now()}`;
+      const resp = await page.request.post(`${baseUrl}/api/plans/${fakeId}/members`, {
         headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
-        data: { userId: 'user_test1', name: 'Test User' },
+        data: { userId: uniqueUser, name: 'Test User' },
       });
 
       expect(resp.status()).toBe(404);
@@ -223,11 +225,11 @@ describe('Member Management (Playwright E2E)', () => {
     it('should require authentication to add member (401)', async () => {
       const { planId } = await createTemplateAndPlan();
 
-      // Send without login/session — should be rejected
-      const resp = await page.context().request.post(`${baseUrl}/api/plans/${planId}/members`, {
-        headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
+      // Send without API key header — should be rejected
+      const resp = await page.request.post(`${baseUrl}/api/plans/${planId}/members`, {
+        headers: { 'content-type': 'application/json' },
         failOnStatusCode: false,
-        data: { userId: 'user_test1', name: 'Test User' },
+        data: { userId: `user_unauth_${Date.now()}`, name: 'Unauth User' },
       });
 
       expect(resp.status()).toBe(401);
@@ -239,22 +241,25 @@ describe('Member Management (Playwright E2E)', () => {
       await adminLogin(page, context, baseUrl);
 
       const { planId } = await createTemplateAndPlan();
+      const uniqueUser = `user_remove_${Date.now()}`;
 
       // Add member first
-      const addResp = await page.context().request.post(`${baseUrl}/api/plans/${planId}/members`, {
+      const addResp = await page.request.post(`${baseUrl}/api/plans/${planId}/members`, {
         headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
-        data: { userId: 'user_remove_me', name: 'Remove Me' },
+        data: { userId: uniqueUser, name: 'Remove Me' },
       });
       expect(addResp.status()).toBe(200);
       const member = await addResp.json();
-      const interviewId = member.id;
+      const interviewId = member.interviewId || member.id;
+
+      // Track for cleanup
+      if (interviewId) cleanupInterviewIds.push(interviewId);
 
       // Remove the member
-      const deleteResp = await page
-        .context()
-        .request.delete(`${baseUrl}/api/plans/${planId}/members/${interviewId}`, {
-          headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
-        });
+      const deleteResp = await page.request.delete(
+        `${baseUrl}/api/plans/${planId}/members/${interviewId}`,
+        { headers: { 'X-Admin-Key': 'test-admin-key' }, failOnStatusCode: false }
+      );
 
       expect(deleteResp.status()).toBe(200);
       const deleteBody = await deleteResp.json();
@@ -264,8 +269,12 @@ describe('Member Management (Playwright E2E)', () => {
       const interview = await server.prisma.interview.findUnique({
         where: { id: interviewId },
       });
-      if (interview) {
-        expect(interview.status).toBe('CANCELLED');
+      expect(interview).toBeNull();
+
+      // Track for cleanup
+      if (interviewId) {
+        const idx = cleanupInterviewIds.indexOf(interviewId);
+        if (idx >= 0) cleanupInterviewIds.splice(idx, 1);
       }
     });
 
@@ -274,12 +283,11 @@ describe('Member Management (Playwright E2E)', () => {
 
       const { planId } = await createTemplateAndPlan();
 
-      const fakeId = '00000000-0000-0000-0000-000000000000';
-      const resp = await page
-        .context()
-        .request.delete(`${baseUrl}/api/plans/${planId}/members/${fakeId}`, {
-          headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
-        });
+      const fakeId = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
+      const resp = await page.request.delete(`${baseUrl}/api/plans/${planId}/members/${fakeId}`, {
+        headers: { 'X-Admin-Key': 'test-admin-key' },
+        failOnStatusCode: false,
+      });
 
       expect(resp.status()).toBe(404);
     });
@@ -294,14 +302,13 @@ describe('Member Management (Playwright E2E)', () => {
       // Create a CSV file content
       const csvContent = '姓名,手机号\n张三,13800138001\n李四,13800138002\n';
 
-      // Send import preview request via page context (authenticated session)
-      const resp = await page
-        .context()
-        .request.fetch(`${baseUrl}/api/plans/${planId}/import-preview`, {
-          method: 'POST',
-          multipart: {
-            file: {
-              name: 'members.csv',
+      // Send import preview request with auth header
+      const resp = await page.request.fetch(`${baseUrl}/api/plans/${planId}/import-preview`, {
+        method: 'POST',
+        headers: { 'X-Admin-Key': 'test-admin-key' },
+        multipart: {
+          file: {
+            name: 'members.csv',
               mimeType: 'text/csv',
               buffer: Buffer.from(csvContent, 'utf-8'),
             },
@@ -329,11 +336,10 @@ describe('Member Management (Playwright E2E)', () => {
 
       const csvContent = '';
 
-      const resp = await page
-        .context()
-        .request.fetch(`${baseUrl}/api/plans/${planId}/import-preview`, {
-          method: 'POST',
-          multipart: {
+      const resp = await page.request.fetch(`${baseUrl}/api/plans/${planId}/import-preview`, {
+        method: 'POST',
+        headers: { 'X-Admin-Key': 'test-admin-key' },
+        multipart: {
             file: {
               name: 'empty.csv',
               mimeType: 'text/csv',
@@ -351,14 +357,14 @@ describe('Member Management (Playwright E2E)', () => {
       await adminLogin(page, context, baseUrl);
 
       const { planId } = await createTemplateAndPlan();
+      const ts = Date.now();
 
-      // First create some interviews via direct API (simulating valid import commit)
       const rows = [
         {
           rowIndex: 1,
           phone: '13800138001',
           status: 'ok' as const,
-          userId: 'user_import_1',
+          userId: `user_import_1_${ts}`,
           inputName: 'Import User 1',
           dingtalkName: 'Import User 1',
           message: '验证通过',
@@ -367,16 +373,14 @@ describe('Member Management (Playwright E2E)', () => {
           rowIndex: 2,
           phone: '13800138002',
           status: 'ok' as const,
-          userId: 'user_import_2',
+          userId: `user_import_2_${ts}`,
           inputName: 'Import User 2',
           dingtalkName: 'Import User 2',
           message: '验证通过',
         },
       ];
 
-      const resp = await page
-        .context()
-        .request.post(`${baseUrl}/api/plans/${planId}/import-commit`, {
+      const resp = await page.request.post(`${baseUrl}/api/plans/${planId}/import-commit`, {
           headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
           data: { rows },
         });
@@ -406,9 +410,7 @@ describe('Member Management (Playwright E2E)', () => {
       const { planId } = await createTemplateAndPlan();
 
       // Invalid: rows field missing
-      const resp = await page
-        .context()
-        .request.post(`${baseUrl}/api/plans/${planId}/import-commit`, {
+      const resp = await page.request.post(`${baseUrl}/api/plans/${planId}/import-commit`, {
           headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
           data: { badField: 'not-rows' },
         });
@@ -420,6 +422,7 @@ describe('Member Management (Playwright E2E)', () => {
       await adminLogin(page, context, baseUrl);
 
       const { planId } = await createTemplateAndPlan();
+      const ts = Date.now();
 
       // First import
       const rows1 = [
@@ -427,16 +430,14 @@ describe('Member Management (Playwright E2E)', () => {
           rowIndex: 1,
           phone: '13800138001',
           status: 'ok' as const,
-          userId: 'user_skip_1',
+          userId: `user_skip_1_${ts}`,
           inputName: 'Skip User 1',
           dingtalkName: 'Skip User 1',
           message: '验证通过',
         },
       ];
 
-      const resp1 = await page
-        .context()
-        .request.post(`${baseUrl}/api/plans/${planId}/import-commit`, {
+      const resp1 = await page.request.post(`${baseUrl}/api/plans/${planId}/import-commit`, {
           headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
           data: { rows: rows1 },
         });
@@ -452,7 +453,7 @@ describe('Member Management (Playwright E2E)', () => {
           rowIndex: 1,
           phone: '13800138001',
           status: 'ok' as const,
-          userId: 'user_skip_1',
+          userId: `user_skip_1_${ts}`,
           inputName: 'Skip User 1',
           dingtalkName: 'Skip User 1',
           message: '验证通过',
@@ -461,16 +462,14 @@ describe('Member Management (Playwright E2E)', () => {
           rowIndex: 2,
           phone: '13800138002',
           status: 'ok' as const,
-          userId: 'user_skip_2',
+          userId: `user_skip_2_${ts}`,
           inputName: 'Skip User 2',
           dingtalkName: 'Skip User 2',
           message: '验证通过',
         },
       ];
 
-      const resp2 = await page
-        .context()
-        .request.post(`${baseUrl}/api/plans/${planId}/import-commit`, {
+      const resp2 = await page.request.post(`${baseUrl}/api/plans/${planId}/import-commit`, {
           headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
           data: { rows: rows2 },
         });
