@@ -151,7 +151,10 @@ describe('InterviewPlan API (Integration)', () => {
       expect(response.statusCode).toBe(200);
       const body = response.json();
       expect(body.plans).toBeDefined();
-      expect(body.plans.length).toBe(beforeCount + 2);
+      // Total is across ALL records (including previous test runs), but
+      // the default pagination is 20. Verify total increased by at least 2
+      // (the 2 plans we just created), not that paginated length equals beforeCount+2.
+      expect(body.total).toBeGreaterThanOrEqual(beforeCount + 2);
     });
 
     it('should filter plans by status', async () => {

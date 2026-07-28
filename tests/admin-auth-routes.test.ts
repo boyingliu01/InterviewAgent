@@ -1,3 +1,4 @@
+import fastifyCsrfProtection from '@fastify/csrf-protection';
 import fastifyFormbody from '@fastify/formbody';
 import secureSession from '@fastify/secure-session';
 import fastifyView from '@fastify/view';
@@ -21,6 +22,8 @@ describe('adminAuthRoutes', () => {
       secret: 'a'.repeat(32),
       salt: 'b'.repeat(16),
     });
+
+    await app.register(fastifyCsrfProtection);
 
     await app.register(fastifyFormbody);
 
