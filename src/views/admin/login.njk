@@ -17,6 +17,7 @@
     {% endif %}
 
     <form method="POST" action="/admin/login">
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
       <div class="mb-4">
         <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
           用户名
