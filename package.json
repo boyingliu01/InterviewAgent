@@ -1,13 +1,20 @@
 {
   "name": "dialog-survey",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "type": "module",
   "description": "AI-powered survey dialog bot that conducts async multi-turn conversations via DingTalk",
   "repository": {
     "type": "git",
     "url": "https://github.com/boyingliu01/dialog-survey"
   },
-  "files": ["dist/", "scripts/", "src/views/", "public/", "prisma/", "ecosystem.config.cjs"],
+  "files": [
+    "dist/",
+    "scripts/",
+    "src/views/",
+    "public/",
+    "prisma/",
+    "ecosystem.config.cjs"
+  ],
   "bin": {
     "dialog-survey": "scripts/cli.mjs"
   },
