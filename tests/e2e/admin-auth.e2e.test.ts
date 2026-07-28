@@ -24,7 +24,7 @@ async function getCsrfToken(page: Page): Promise<string> {
 
   // Fallback: read CSRF token from document.cookie via evaluate
   const pageCookies = (await page.evaluate(
-    '(() => { const m = document.cookie.match(/csrf-token=([^;]+)/); return m ? m[1] : ""; })()',
+    '(() => { const m = document.cookie.match(/csrf-token=([^;]+)/); return m ? m[1] : ""; })()'
   )) as string;
   return pageCookies;
 }
@@ -34,7 +34,7 @@ async function doLogin(
   baseUrl: string,
   username: string,
   password: string,
-  maxRedirects?: number,
+  maxRedirects?: number
 ): Promise<LoginResponse> {
   const csrfToken = await getCsrfToken(page);
   const resp = await page.context().request.post(`${baseUrl}/admin/login`, {
@@ -54,11 +54,7 @@ async function doLogin(
   };
 }
 
-async function doPost(
-  page: Page,
-  baseUrl: string,
-  path: string,
-): Promise<LoginResponse> {
+async function doPost(page: Page, baseUrl: string, path: string): Promise<LoginResponse> {
   const csrfToken = await getCsrfToken(page);
   const resp = await page.context().request.post(`${baseUrl}${path}`, {
     headers: {
@@ -83,7 +79,12 @@ async function applySetCookie(context: BrowserContext, setCookie: string | null)
   const eq = cookieStr.indexOf('=');
   if (eq <= 0) return;
   await context.addCookies([
-    { name: cookieStr.slice(0, eq), value: cookieStr.slice(eq + 1), domain: '127.0.0.1', path: '/' },
+    {
+      name: cookieStr.slice(0, eq),
+      value: cookieStr.slice(eq + 1),
+      domain: '127.0.0.1',
+      path: '/',
+    },
   ]);
 }
 

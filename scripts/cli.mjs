@@ -328,12 +328,7 @@ export async function checkPrerequisites(databaseUrl, options = {}) {
  * @returns {{ ok: boolean, missing: string[] }}
  */
 export function verifyInstallation(installDir) {
-  const requiredFiles = [
-    'ecosystem.config.cjs',
-    'dist/src/server.js',
-    '.env',
-    'node_modules',
-  ];
+  const requiredFiles = ['ecosystem.config.cjs', 'dist/src/server.js', '.env', 'node_modules'];
 
   const missing = [];
   for (const file of requiredFiles) {
@@ -551,8 +546,13 @@ export async function installCommand(flags) {
   } else {
     // Detect if any non-interactive flags were provided
     const PROVIDED_FLAGS = [
-      'db-url', 'llm-api-key', 'llm-base-url', 'llm-model',
-      'dingtalk-client-id', 'dingtalk-client-secret', 'dingtalk-agent-id',
+      'db-url',
+      'llm-api-key',
+      'llm-base-url',
+      'llm-model',
+      'dingtalk-client-id',
+      'dingtalk-client-secret',
+      'dingtalk-agent-id',
     ];
     const anyFlagProvided = PROVIDED_FLAGS.some((f) => flags[f] !== undefined);
 

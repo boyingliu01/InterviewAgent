@@ -46,11 +46,7 @@ describe('CLI (E2E)', () => {
 
   describe('#158 — non-interactive install fail-fast', () => {
     it('should fail fast with missing flags and list them', async () => {
-      const result = runCli([
-        'install',
-        '--db-url',
-        'postgresql://test:test@localhost:5432/test',
-      ]);
+      const result = runCli(['install', '--db-url', 'postgresql://test:test@localhost:5432/test']);
 
       // Non-interactive with partial flags must exit non-zero
       expect(result.exitCode).not.toBe(0);
@@ -60,24 +56,26 @@ describe('CLI (E2E)', () => {
         output.includes('Missing') ||
           output.includes('requires all flags') ||
           output.includes('flag'),
-        `Expected CLI to list missing flags, got: ${output}`,
+        `Expected CLI to list missing flags, got: ${output}`
       ).toBe(true);
     });
 
     it('should fail fast with no flags and non-interactive env', async () => {
-      const result = runCli([
-        'install',
-      ]);
+      const result = runCli(['install']);
 
       // With no flags at all, and in a non-TTY context, should not hang
       // (test env is non-TTY, so it should either fail or fall to interactive)
       // The CLI should not block indefinitely
       const output = result.stdout + result.stderr;
-      const isFinished = result.exitCode !== null &&
+      const isFinished =
+        result.exitCode !== null &&
         (output.includes('No flags provided') ||
-         output.includes('Missing') ||
-         output.includes('install'));
-      expect(isFinished, `CLI should not hang without flags, got exit=${result.exitCode}: ${output}`).toBe(true);
+          output.includes('Missing') ||
+          output.includes('install'));
+      expect(
+        isFinished,
+        `CLI should not hang without flags, got exit=${result.exitCode}: ${output}`
+      ).toBe(true);
     });
   });
 

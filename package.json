@@ -7,14 +7,7 @@
     "type": "git",
     "url": "https://github.com/boyingliu01/dialog-survey"
   },
-  "files": [
-    "dist/",
-    "scripts/",
-    "src/views/",
-    "public/",
-    "prisma/",
-    "ecosystem.config.cjs"
-  ],
+  "files": ["dist/", "scripts/", "src/views/", "public/", "prisma/", "ecosystem.config.cjs"],
   "bin": {
     "dialog-survey": "scripts/cli.mjs"
   },

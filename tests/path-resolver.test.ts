@@ -52,9 +52,7 @@ describe('resolveAssetRoots', () => {
 
     const serverDir = join(root, 'node_modules', 'dialog-survey', 'dist', 'src');
     const result = resolveAssetRoots(serverDir);
-    expect(result.viewsDir).toBe(
-      resolve(root, 'node_modules', 'dialog-survey', 'src', 'views')
-    );
+    expect(result.viewsDir).toBe(resolve(root, 'node_modules', 'dialog-survey', 'src', 'views'));
     expect(result.staticRoot).toBe(resolve(root, 'node_modules', 'dialog-survey', 'public'));
   });
 

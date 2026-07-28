@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import nunjucks from 'nunjucks';
 import { resolve } from 'node:path';
+import nunjucks from 'nunjucks';
+import { describe, expect, it } from 'vitest';
 
 describe('login.njk CSRF token', () => {
   const viewsDir = resolve(__dirname, '..', 'src', 'views');
