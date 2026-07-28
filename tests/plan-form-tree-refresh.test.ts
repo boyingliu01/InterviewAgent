@@ -16,7 +16,7 @@ describe('plan-form.njk tree refresh', () => {
     // After creating, BOTH main-content AND tree-panel should refresh
     expect(html).toContain("htmx.ajax('GET', '/admin/content/plans/' + resp.id");
     // The fix: add sidebar refresh
-    expect(html).toContain("htmx.ajax('GET', '/admin', {target: '#tree-panel'");
+    expect(html).toContain("htmx.ajax('GET', '/admin', {target: 'aside'");
   });
 
   it('should preserve main-content refresh on edit', () => {

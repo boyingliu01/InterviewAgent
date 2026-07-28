@@ -26,6 +26,7 @@ export async function adminAuthRoutes(fastify: FastifyInstance): Promise<void> {
 
     return reply.view('admin/login.njk', {
       error: null,
+      csrfToken: reply.generateCsrf(),
     });
   });
 
@@ -35,6 +36,7 @@ export async function adminAuthRoutes(fastify: FastifyInstance): Promise<void> {
       fastify.log.warn('Admin login failed: invalid request body');
       return reply.status(400).view('admin/login.njk', {
         error: '无效的请求格式',
+        csrfToken: reply.generateCsrf(),
       });
     }
     const { username, password } = parsed.data;
@@ -46,6 +48,7 @@ export async function adminAuthRoutes(fastify: FastifyInstance): Promise<void> {
       fastify.log.error('Admin credentials not configured');
       return reply.status(500).view('admin/login.njk', {
         error: '服务器配置错误：管理员凭据未设置',
+        csrfToken: reply.generateCsrf(),
       });
     }
 
@@ -53,6 +56,7 @@ export async function adminAuthRoutes(fastify: FastifyInstance): Promise<void> {
       fastify.log.warn({ username }, 'Admin login failed: invalid credentials');
       return reply.status(401).view('admin/login.njk', {
         error: '用户名或密码错误',
+        csrfToken: reply.generateCsrf(),
       });
     }
 
@@ -61,6 +65,7 @@ export async function adminAuthRoutes(fastify: FastifyInstance): Promise<void> {
       fastify.log.warn({ username }, 'Admin login failed: invalid credentials');
       return reply.status(401).view('admin/login.njk', {
         error: '用户名或密码错误',
+        csrfToken: reply.generateCsrf(),
       });
     }
 

@@ -21,6 +21,11 @@ export async function createE2EServer(port = 0): Promise<E2EServer> {
   if (!process.env['SESSION_SECRET'])
     process.env['SESSION_SECRET'] = 'e2e-session-secret-key-32chars!!';
   if (!process.env['SESSION_SALT']) process.env['SESSION_SALT'] = 'e2e-session-salt';
+  // Set E2E admin credentials for login tests
+  if (!process.env['ADMIN_USERNAME']) process.env['ADMIN_USERNAME'] = 'e2e-admin';
+  if (!process.env['ADMIN_PASSWORD_HASH'])
+    process.env['ADMIN_PASSWORD_HASH'] =
+      '$2a$04$/n0nx2VL1x0uOwVndrujnufaskvd7PG9fLC.MsbejxijyJmoALqAG';
   // Set dummy DingTalk env vars so DingTalkStreamClient.fromEnv() doesn't throw
   if (!process.env['DINGTALK_CLIENT_ID']) process.env['DINGTALK_CLIENT_ID'] = 'e2e-dummy-client-id';
   if (!process.env['DINGTALK_CLIENT_SECRET'])

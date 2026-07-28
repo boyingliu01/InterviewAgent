@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.8.7 - 2026-07-28
+
+### Fixed
+- fix: add CSRF protection to admin login form (#156)
+  - Added `_csrf` hidden input to `login.njk` and pass `csrfToken` in all admin-auth views
+- fix: correct tree panel selector in plan-form.njk (#155)
+  - Changed `#tree-panel` to `aside` selector for HTMX tree refresh
+
+### Added
+- test: add E2E tests for admin authentication (13 tests: login, CSRF, session, logout, API Key)
+- test: add E2E tests for admin tree refresh after plan creation (2 tests)
+- test: add unit tests for login CSRF (2 tests) and plan-form tree target selector (2 tests)
+
+### Changed
+- Configured E2E test server with `ADMIN_USERNAME`/`ADMIN_PASSWORD_HASH` environment variables
+
 ## 1.8.6 - 2026-07-12
 
 ### Changed
