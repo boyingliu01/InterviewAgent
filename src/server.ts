@@ -177,7 +177,7 @@ export async function buildApp() {
 
   await fastify.register(secureSession, {
     secret: sessionSecret,
-    salt: sessionSalt,
+    salt: Buffer.from(sessionSalt, 'hex'),
     cookie: {
       path: '/',
       httpOnly: true,

@@ -36,6 +36,19 @@
   <header class="bg-white border-b border-gray-200 flex-shrink-0 h-11 flex items-center px-4 gap-3">
     <span class="text-sm font-semibold text-gray-800">访谈管理后台</span>
     <div class="ml-auto flex items-center gap-3 text-xs">
+      {% if adminUser %}
+      <span class="text-gray-400">{{ adminUser }}</span>
+      <button
+        hx-get="/admin/content/change-password"
+        hx-target="#main-content"
+        hx-swap="innerHTML"
+        class="text-gray-400 hover:text-indigo-600 transition-colors"
+      >修改密码</button>
+      <form method="post" action="/admin/logout" class="inline">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+        <button type="submit" class="text-gray-400 hover:text-red-600 transition-colors">退出</button>
+      </form>
+      {% endif %}
       <a href="/admin/analytics" class="text-gray-400 hover:text-gray-700" title="统计分析">统计</a>
       <a href="/" class="text-gray-400 hover:text-gray-800">返回主站</a>
     </div>

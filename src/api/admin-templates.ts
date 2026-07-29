@@ -201,6 +201,7 @@ export async function adminTemplatesRoutes(
         }));
         return reply.view('layouts/admin-tree.njk', {
           templates: templatesWithPlans,
+          adminUser: _request.user ? _request.user['userId'] : undefined,
         });
       } catch (e) {
         const errMsg = e instanceof Error ? e.message : 'Failed to load admin tree';

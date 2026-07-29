@@ -309,11 +309,11 @@ describe('Member Management (Playwright E2E)', () => {
         multipart: {
           file: {
             name: 'members.csv',
-              mimeType: 'text/csv',
-              buffer: Buffer.from(csvContent, 'utf-8'),
-            },
+            mimeType: 'text/csv',
+            buffer: Buffer.from(csvContent, 'utf-8'),
           },
-        });
+        },
+      });
 
       // Preview may work or fail depending on DingTalk availability
       // Accept both outcomes as long as we don't crash
@@ -340,13 +340,13 @@ describe('Member Management (Playwright E2E)', () => {
         method: 'POST',
         headers: { 'X-Admin-Key': 'test-admin-key' },
         multipart: {
-            file: {
-              name: 'empty.csv',
-              mimeType: 'text/csv',
-              buffer: Buffer.from(csvContent, 'utf-8'),
-            },
+          file: {
+            name: 'empty.csv',
+            mimeType: 'text/csv',
+            buffer: Buffer.from(csvContent, 'utf-8'),
           },
-        });
+        },
+      });
 
       expect(resp.status()).toBe(400);
     });
@@ -381,9 +381,9 @@ describe('Member Management (Playwright E2E)', () => {
       ];
 
       const resp = await page.request.post(`${baseUrl}/api/plans/${planId}/import-commit`, {
-          headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
-          data: { rows },
-        });
+        headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
+        data: { rows },
+      });
 
       expect(resp.status()).toBe(200);
       const body = await resp.json();
@@ -411,9 +411,9 @@ describe('Member Management (Playwright E2E)', () => {
 
       // Invalid: rows field missing
       const resp = await page.request.post(`${baseUrl}/api/plans/${planId}/import-commit`, {
-          headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
-          data: { badField: 'not-rows' },
-        });
+        headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
+        data: { badField: 'not-rows' },
+      });
 
       expect(resp.status()).toBe(400);
     });
@@ -438,9 +438,9 @@ describe('Member Management (Playwright E2E)', () => {
       ];
 
       const resp1 = await page.request.post(`${baseUrl}/api/plans/${planId}/import-commit`, {
-          headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
-          data: { rows: rows1 },
-        });
+        headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
+        data: { rows: rows1 },
+      });
       expect(resp1.status()).toBe(200);
       const body1 = await resp1.json();
       for (const id of body1.interviewIds) {
@@ -470,9 +470,9 @@ describe('Member Management (Playwright E2E)', () => {
       ];
 
       const resp2 = await page.request.post(`${baseUrl}/api/plans/${planId}/import-commit`, {
-          headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
-          data: { rows: rows2 },
-        });
+        headers: { 'content-type': 'application/json', 'X-Admin-Key': 'test-admin-key' },
+        data: { rows: rows2 },
+      });
 
       expect(resp2.status()).toBe(200);
       const body2 = await resp2.json();
